@@ -39,7 +39,7 @@ struct Troop{
     int x,y;
     int tx,ty;
     WORD color;
-    Move moveQueue[20];
+    Move moveQueue[100];
     int moveAmount;
     int TravelDistanceX;
     int cTravelDistanceX;
@@ -130,4 +130,7 @@ struct Base{
 void TroopUpdate(Troop* troops,int numTroops,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,Troop* selectedTroop);
 void BaseUpdate(Base* bases,int numBases,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,Base* selectedBase);
 #include "WorldBasicFunctions.cpp"
+#include "Bases.cpp"
+#include "Troops.cpp"
+
 #endif // WORLDBASICFUNCTIONS_H_INCLUDED

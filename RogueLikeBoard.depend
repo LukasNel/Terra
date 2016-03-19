@@ -27,14 +27,22 @@
 1449339795 c:\users\abrie\desktop\roguelikeboard\terraingeneration.cpp
 	"TerrainGeneration.h"
 
-1458381360 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.h
+1458385322 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.h
 	<windowsx.h>
 	<iostream>
 	<stdio.h>
 	<stdlib.h>
 	"ConsoleFunctions.h"
 	"WorldBasicFunctions.cpp"
+	"Bases.cpp"
+	"Troops.cpp"
 
-1458381420 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.cpp
+1458385511 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.cpp
+	"WorldBasicFunctions.h"
+
+1458385159 c:\users\abrie\desktop\roguelikeboard\bases.cpp
+	"WorldBasicFunctions.h"
+
+1458385179 c:\users\abrie\desktop\roguelikeboard\troops.cpp
 	"WorldBasicFunctions.h"
 
