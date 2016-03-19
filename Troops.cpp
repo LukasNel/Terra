@@ -1,5 +1,5 @@
 #include "WorldBasicFunctions.h"
-  Troop::Troop(){
+void Troop::InitTroop(){
         color =  FOREGROUND_RED | FOREGROUND_INTENSITY;
         graphics = 'N';
         forbiddenChar[0] = 'S';
@@ -17,22 +17,11 @@
         x = y = tx = ty = 0;
         activation = false;
     }
+  Troop::Troop(){
+        InitTroop();
+    }
     Troop::Troop(int fx,int fy){
-        color =  FOREGROUND_RED | FOREGROUND_INTENSITY;
-        graphics = 'N';
-        forbiddenChar[0] = 'S';
-        forbiddenAttr[0] = FOREGROUND_BLUE;
-
-        forbiddenChar[1] = graphics;
-        forbiddenAttr[1] = color;
-
-        TravelDistanceX = 5;
-        cTravelDistanceX = TravelDistanceX;
-        TravelDistanceY = 5;
-        cTravelDistanceY = TravelDistanceY;
-
-        moveAmount = 0;
-        activation = false;
+        InitTroop();
         x = fx;
         tx = fx;
         ty = fy;
@@ -61,6 +50,31 @@
         moveAmount = 0;
 
     }
+    void Troop::Selected(CHAR_INFO* levelmap,int maxLevelX,int maxLevelY,int deltaX,int deltaY,int movePoints){
+        bool g_bool = false;
+        int screenTroopX = 0;
+        int screenTroopY = 0;
+        for(int i = -TravelDistanceX;i <= TravelDistanceX;i++){
+            for(int j = -TravelDistanceY; j <= TravelDistanceY; j++){
+                    g_bool = false;
+                    screenTroopX = tx-deltaX + i;
+                    screenTroopY = ty-deltaY + j;
+
+                    if(!OutOfBounds(screenTroopX,screenTroopY,maxLevelX,maxLevelY) && (abs(i)+abs(j)) <= movePoints){
+
+                       if(i != 0 || j != 0){
+                        if(checkIfForbidden(levelmap[screenTroopX + screenTroopY*maxLevelX].Char.AsciiChar,
+                                            levelmap[screenTroopX + screenTroopY*maxLevelX].Attributes))
+                                                                g_bool = true;
+                       }
+                        if(!g_bool) levelmap[screenTroopX  +  screenTroopY*maxLevelX].Attributes |= BACKGROUND_GREEN;
+                    }
+            }
+        }
+
+
+
+    }
     void Troop::ShowMoveQueue(CHAR_INFO* levelmap,int maxLX,int maxLY,int fdeltaX,int fdeltaY){
         tx = x;
         ty = y;
@@ -84,25 +98,9 @@
              activation = true;
     }
     void Troop::Deactivate(){
-
             color = color & ~BACKGROUND_RED;
             activation = false;
-
     }
 
 
-    void Troop::BuildBase(Base* bases,int& numBases,int& gOil,int& gIron,int& gSulphur,CHAR_INFO* worldmap,int maxX,int maxY){
-       bool testRangeBool = false;
 
-        for(int i = 0;i<numBases;i++)if(x - bases[i].x <= bases[i].resourceSearchSideLength &&
-                                        y - bases[i].y <= bases[i].resourceSearchSideLength)testRangeBool = true;
-        if(!testRangeBool){
-            bases[numBases] = Base(x,y);
-            bases[numBases].CountResources(worldmap,maxX,maxY);
-
-            gOil += bases[numBases].oil;
-            gSulphur += bases[numBases].sulphur;
-            gIron += bases[numBases].iron;
-            numBases++;
-        }
-    }

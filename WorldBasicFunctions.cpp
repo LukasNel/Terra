@@ -124,50 +124,25 @@ void SaveGame(int px,int py,CHAR_INFO* worldmap,int maxX,int maxY){
     fclose(f);
     numSaved++;
 }
-void TroopUpdate(Troop* troops,int numTroops,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Troop* selectedTroop){
-    int index = 0;
-    int screenTroopX = 0;
-    int screenTroopY = 0;
-    for(int i = 0;i<numTroops;i++){
-        screenTroopX = troops[i].x-deltaX;
-        screenTroopY = troops[i].y-deltaY;
-        if(!OutOfBounds(screenTroopX,screenTroopY,maxLevelX,maxLevelY)){
-                WriteCharA(levelmap,troops[i].graphics,troops[i].color,screenTroopX,screenTroopY,maxLevelX);
-                troops[i].TravelDistanceX = min(movePoints,troops[i].cTravelDistanceX);
-                troops[i].TravelDistanceY = min(movePoints,troops[i].cTravelDistanceY);
+void InfantryUpdate(Infantry* infantries,int numInfantry,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry){    int index = 0;
+    int screenInfantryX = 0;
+    int screenInfantryY = 0;
+    for(int i = 0;i<numInfantry;i++){
+        screenInfantryX = infantries[i].x-deltaX;
+        screenInfantryY = infantries[i].y-deltaY;
+        if(!OutOfBounds(screenInfantryX,screenInfantryY,maxLevelX,maxLevelY)){
+                WriteCharA(levelmap,infantries[i].graphics,infantries[i].color,screenInfantryX,screenInfantryY,maxLevelX);
+                infantries[i].TravelDistanceX = min(movePoints,infantries[i].cTravelDistanceX);
+                infantries[i].TravelDistanceY = min(movePoints,infantries[i].cTravelDistanceY);
 
         }
-        troops[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
+        infantries[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
     }
 
-    if(selectedTroop ){
-        for(int i = -selectedTroop->TravelDistanceX;i <= selectedTroop->TravelDistanceX;i++){
-                for(int j = -selectedTroop->TravelDistanceY; j <= selectedTroop->TravelDistanceY; j++){
-                    g_bool = false;
-                    screenTroopX = selectedTroop->tx-deltaX + i;
-                    screenTroopY = selectedTroop->ty-deltaY + j;
-
-                    if(!OutOfBounds(screenTroopX,screenTroopY,maxLevelX,maxLevelY) && (abs(i)+abs(j)) <= movePoints){
-
-                       if(i != 0 || j != 0)
-                       {
-                       for(int k = 0 ;k<selectedTroop->numForbidden;k++)
-                       {
-                        if(compareCharWorldmap(levelmap,screenTroopX,screenTroopY,maxLevelX,selectedTroop->forbiddenChar[k],selectedTroop->forbiddenAttr[k]))
-                        {
-                        g_bool = true;
-                        }
-                       }
-                       }
-                           if(!g_bool) levelmap[screenTroopX  +  screenTroopY*maxLevelX].Attributes |= BACKGROUND_GREEN;
-
-
-
-                    }
-            }
-        }
-        if(!OutOfBounds(selectedTroop->x - deltaX,selectedTroop->y - deltaY,maxLevelX,maxLevelY))
-            levelmap[selectedTroop->x - deltaX+(selectedTroop->y - deltaY)*maxLevelX].Attributes = selectedTroop->color | BACKGROUND_RED;
+    if(selectedInfantry ){
+        selectedInfantry->Selected(levelmap,maxLevelX,maxLevelY,deltaX,deltaY,movePoints);
+        if(!OutOfBounds(selectedInfantry->x - deltaX,selectedInfantry->y - deltaY,maxLevelX,maxLevelY))
+            levelmap[selectedInfantry->x - deltaX+(selectedInfantry->y - deltaY)*maxLevelX].Attributes = selectedInfantry->color | BACKGROUND_RED;
 
     }
 }
