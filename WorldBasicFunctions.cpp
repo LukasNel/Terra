@@ -124,7 +124,8 @@ void SaveGame(int px,int py,CHAR_INFO* worldmap,int maxX,int maxY){
     fclose(f);
     numSaved++;
 }
-void InfantryUpdate(Infantry* infantries,int numInfantry,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry){    int index = 0;
+void InfantryUpdate(Infantry* infantries,int numInfantry,Tank* tanks,int numTanks,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry,Tank* selectedTank){
+    int index = 0;
     int screenInfantryX = 0;
     int screenInfantryY = 0;
     for(int i = 0;i<numInfantry;i++){
@@ -143,6 +144,25 @@ void InfantryUpdate(Infantry* infantries,int numInfantry,int deltaX,int deltaY,i
         selectedInfantry->Selected(levelmap,maxLevelX,maxLevelY,deltaX,deltaY,movePoints);
         if(!OutOfBounds(selectedInfantry->x - deltaX,selectedInfantry->y - deltaY,maxLevelX,maxLevelY))
             levelmap[selectedInfantry->x - deltaX+(selectedInfantry->y - deltaY)*maxLevelX].Attributes = selectedInfantry->color | BACKGROUND_RED;
+
+    }
+    for(int i = 0;i<numTanks;i++){
+        screenInfantryX = tanks[i].x-deltaX;
+        screenInfantryY = tanks[i].y-deltaY;
+        if(!OutOfBounds(screenInfantryX,screenInfantryY,maxLevelX,maxLevelY)){
+                WriteCharA(levelmap,tanks[i].graphics,tanks[i].color,screenInfantryX,screenInfantryY,maxLevelX);
+                tanks[i].TravelDistanceX = min(movePoints,tanks[i].cTravelDistanceX);
+                tanks[i].TravelDistanceY = min(movePoints,tanks[i].cTravelDistanceY);
+
+        }
+        tanks[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
+    }
+
+    if(selectedTank){
+        selectedTank->Selected(levelmap,maxLevelX,maxLevelY,deltaX,deltaY,movePoints);
+        WriteStrNum(levelmap,"Percent of Move Points removed: ",100/selectedTank->movePointReducer,0,0,maxLevelX);
+        if(!OutOfBounds(selectedTank->x - deltaX,selectedTank->y - deltaY,maxLevelX,maxLevelY))
+            levelmap[selectedTank->x - deltaX+(selectedTank->y - deltaY)*maxLevelX].Attributes = selectedTank->color | BACKGROUND_RED;
 
     }
 }

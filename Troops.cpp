@@ -51,6 +51,7 @@ void Troop::InitTroop(){
 
     }
     void Troop::Selected(CHAR_INFO* levelmap,int maxLevelX,int maxLevelY,int deltaX,int deltaY,int movePoints){
+
         bool g_bool = false;
         int screenTroopX = 0;
         int screenTroopY = 0;
@@ -67,7 +68,7 @@ void Troop::InitTroop(){
                                             levelmap[screenTroopX + screenTroopY*maxLevelX].Attributes))
                                                                 g_bool = true;
                        }
-                        if(!g_bool) levelmap[screenTroopX  +  screenTroopY*maxLevelX].Attributes |= BACKGROUND_GREEN;
+                        if(!g_bool) levelmap[screenTroopX  +  screenTroopY*maxLevelX].Attributes |= moveAreaColour;
                     }
             }
         }
@@ -84,7 +85,7 @@ void Troop::InitTroop(){
                     tx += moveQueue[i].x;
                     ty += moveQueue[i].y;
                    if(!OutOfBounds(tx-fdeltaX,ty-fdeltaY,maxLX,maxLY))
-                    WriteCharA(levelmap,'X',FOREGROUND_RED | FOREGROUND_BLUE,tx-fdeltaX,ty-fdeltaY,maxLX);
+                    WriteCharA(levelmap,'X',FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,tx-fdeltaX,ty-fdeltaY,maxLX);
                 break;
 
             }

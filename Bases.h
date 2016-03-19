@@ -1,7 +1,8 @@
 #ifndef BASES_H_INCLUDED
 #define BASES_H_INCLUDED
 enum BuildOrderType{
-    TroopOrder,
+    InfantryOrder,
+    TankOrder,
     NoneOrder
 };
 struct BuildOrder{
@@ -10,6 +11,8 @@ struct BuildOrder{
     BuildOrder(){x = y = 0;orderType = NoneOrder;}
     BuildOrder(int fx,int fy,BuildOrderType forderType){x = fx,y = fy;orderType = forderType;}
 };
+struct Infantry;
+struct Tank;
 struct Base{
 
     int oil = 0;
@@ -27,17 +30,25 @@ struct Base{
     char ironGraphics = 'I';
     WORD ironColour = FOREGROUND_INTENSITY;
 
-    int infantryOilCost = 1;
-    int infantrySulphurCost = 5;
-    int infantryIronCost = 2;
+    int infantryOilCost = 8;
+    int infantrySulphurCost = 10;
+    int infantryIronCost = 4;
     char infantryUnitRepairGraphics = '+';
     WORD infantryUnitRepairColour = BACKGROUND_RED;
+
+    int tankOilCost = 15;
+    int tankSulphurCost = 10;
+    int tankIronCost = 9;
+    char tankUnitRepairGraphics = '-';
+    WORD tankUnitRepairColour = BACKGROUND_RED | BACKGROUND_INTENSITY;
+
     int x = -1,y = -1;
     int resourceSearchSideLength = 10;
     int troopBuildingSideLength = 3;
     WORD colour = BACKGROUND_BLUE | BACKGROUND_GREEN ;
     char graphics = 'B';
-    Troop* baseUnits[50];
+    Infantry* baseUnits[50];
+    Tank* baseTanks[50];
 
     int numBuildOrders;
     int maxBuildOrders;
@@ -46,19 +57,27 @@ struct Base{
     CHAR_INFO* forbiddens;
     int numForbiddens = 2;
     int amountUnits = 0;
+    int amountTanks = 0;
 
     bool selected = false;
     Base();
     Base(int fx,int fy,int fresourcesideLength,int funitSidelength);
     Base(int fx,int fy);
+    void InitBase();
+
     void Activate();
     void Deactivate();
-    void InitBase();
+
+
     void CountResources(CHAR_INFO* worldmap,int maxMapX,int maxMapY);
-   void CreateInfantry(int dx,int dy,Troop* troops,int& numTroops,int maxMapX,int maxMapY,CHAR_INFO* worldmap,char seaChar,WORD seaAttr);
-    void AddTroopToBuildQueue(int dx,int dy);
-   void ExecuteBuildQueue(Troop* troops,int& numTroops,int maxMapX,int maxMapY,char seaChar,WORD seaAttr,CHAR_INFO* worldmap);
+
+    void CreateInfantry(int dx,int dy,Infantry* infantries,int& numInfantry,int maxMapX,int maxMapY,CHAR_INFO* worldmap,char seaChar,WORD seaAttr);
+    void CreateTank(int dx,int dy,Tank* tanks,int& numTanks,int maxMapX,int maxMapY,CHAR_INFO* worldmap,char seaChar,WORD seaAttr);
+
+    void AddTroopToBuildQueue(int dx,int dy,BuildOrderType bType);
+    void ExecuteBuildQueue(Infantry* troops,int& numInfantry,Tank* tanks,int& numTanks,int maxMapX,int maxMapY,char seaChar,WORD seaAttr,CHAR_INFO* worldmap);
     void ShowBuildQueue(CHAR_INFO* levelmap,int maxLX,int maxLY,int fdeltaX,int fdeltaY);
+
     void Unselected(CHAR_INFO* levelmap,int maxMapX,int maxMapY,int deltaX,int deltaY);
     void Selected(CHAR_INFO* levelmap,int maxLX,int maxLY,int deltaX,int deltaY);
 };

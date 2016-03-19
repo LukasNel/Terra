@@ -1,5 +1,6 @@
 #ifndef TROOPS_H_INCLUDED
 #define TROOPS_H_INCLUDED
+#include "Bases.h"
 enum moveType{
     MoveTranslate
 };
@@ -18,12 +19,12 @@ struct Move{
         y = fy;
     }
 };
-struct Base;
 struct Troop{
     int x,y;
     int tx,ty;
     WORD color;
-    Move moveQueue[100];
+    WORD moveAreaColour;
+    Move moveQueue[200];
     int moveAmount;
     int TravelDistanceX;
     int cTravelDistanceX;

@@ -13,13 +13,14 @@ void VisionCone(Direction fdirection,int px,int py,CHAR_INFO* wr,CHAR_INFO* worl
 void MovePlayer(int& px,int& py,int deltaPX,int deltaPY,int& screenX,int& screenY,CHAR_INFO* wr,int maxMapX,int maxMapY,char seaChar);
 void WorldGen(CHAR_INFO* worldmap,int maxMapX,int maxMapY,char seaChar,int amountResources,int resourceGroupSize);
 
-const char seachar = 'S';
-const WORD seaattr = FOREGROUND_BLUE;
+char seachar = 'S';
+WORD seaattr = FOREGROUND_BLUE;
 
 #include "Troops.h"
-#include "Bases.h"
 #include "Infantry.h"
-void InfantryUpdate(Infantry* infantries,int numInfantry,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry);
+#include "Tanks.h"
+
+void InfantryUpdate(Infantry* infantries,int numInfantry,Tank* tanks,int numTanks,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry,Tank* selectedTank);
 void BaseUpdate(Base* bases,int numBases,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,Base* selectedBase);
 #include "WorldBasicFunctions.cpp"
 #include "Bases.cpp"

@@ -1,6 +1,6 @@
 #ifndef INFANTRY_H_INCLUDED
 #define INFANTRY_H_INCLUDED
-#include "WorldBasicFunctions.h"
+#include "Bases.h"
 struct Infantry : public Troop{
     void InitTroop();
     Infantry(){

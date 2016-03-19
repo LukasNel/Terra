@@ -2,6 +2,7 @@
 void Infantry::InitTroop(){
         color =  FOREGROUND_RED | FOREGROUND_INTENSITY;
         graphics = 'N';
+        moveAreaColour = BACKGROUND_GREEN;
         forbiddenChar[0] = 'S';
         forbiddenAttr[0] = FOREGROUND_BLUE;
 
