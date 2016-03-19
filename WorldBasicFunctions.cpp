@@ -1,312 +1,10 @@
 #include "WorldBasicFunctions.h"
 bool g_bool = false;
-    Troop::Troop(){
-        color =  FOREGROUND_RED | FOREGROUND_INTENSITY;
-        graphics = 'N';
-        forbiddenChar[0] = 'S';
-        forbiddenAttr[0] = FOREGROUND_BLUE;
 
-        forbiddenChar[1] = graphics;
-        forbiddenAttr[1] = color;
-
-        TravelDistanceX = 5;
-        cTravelDistanceX = TravelDistanceX;
-        TravelDistanceY = 5;
-        cTravelDistanceY = TravelDistanceY;
-
-        moveAmount = 0;
-        x = y = tx = ty = 0;
-        activation = false;
-    }
-    Troop::Troop(int fx,int fy){
-        color =  FOREGROUND_RED | FOREGROUND_INTENSITY;
-        graphics = 'N';
-        forbiddenChar[0] = 'S';
-        forbiddenAttr[0] = FOREGROUND_BLUE;
-
-        forbiddenChar[1] = graphics;
-        forbiddenAttr[1] = color;
-
-        TravelDistanceX = 5;
-        cTravelDistanceX = TravelDistanceX;
-        TravelDistanceY = 5;
-        cTravelDistanceY = TravelDistanceY;
-
-        moveAmount = 0;
-        activation = false;
-        x = fx;
-        tx = fx;
-        ty = fy;
-        y = fy;
-
-
-    }
-     inline bool Troop::checkIfForbidden(char checkChar,WORD checkAttr){
-        for(int i = 0;i<numForbidden;i++)if(checkChar == forbiddenChar[i] && checkAttr == forbiddenAttr[i])return 1;
-        return 0;
-     }
-    void Troop::Translate(int dx,int dy,CHAR_INFO destinationSquare){
-        if(checkIfForbidden(destinationSquare.Char.AsciiChar,destinationSquare.Attributes))return;
-        moveQueue[moveAmount++] = Move(dx,dy,MoveTranslate);
-    }
-    void Troop::ExecuteMoveQueue(){
-        for(int i = 0;i<moveAmount;i++){
-            switch(moveQueue[i].mType){
-                case MoveTranslate:
-                    x += moveQueue[i].x;
-                    y += moveQueue[i].y;
-                break;
-
-            }
-        }
-        moveAmount = 0;
-
-    }
-    void Troop::ShowMoveQueue(CHAR_INFO* levelmap,int maxLX,int maxLY,int fdeltaX,int fdeltaY){
-        tx = x;
-        ty = y;
-        for(int i = 0;i<moveAmount;i++){
-            switch(moveQueue[i].mType){
-                case MoveTranslate:
-                    tx += moveQueue[i].x;
-                    ty += moveQueue[i].y;
-                   if(!OutOfBounds(tx-fdeltaX,ty-fdeltaY,maxLX,maxLY))
-                    WriteCharA(levelmap,'X',FOREGROUND_RED | FOREGROUND_BLUE,tx-fdeltaX,ty-fdeltaY,maxLX);
-                break;
-
-            }
-        }
-
-
-    }
-    void Troop::Activate(){
-
-             color = color | BACKGROUND_RED ;
-             activation = true;
-    }
-    void Troop::Deactivate(){
-
-            color = color & ~BACKGROUND_RED;
-            activation = false;
-
-    }
-
-
-    void Troop::BuildBase(Base* bases,int& numBases,int& gOil,int& gIron,int& gSulphur,CHAR_INFO* worldmap,int maxX,int maxY){
-       bool testRangeBool = false;
-
-        for(int i = 0;i<numBases;i++)if(x - bases[i].x <= bases[i].resourceSearchSideLength &&
-                                        y - bases[i].y <= bases[i].resourceSearchSideLength)testRangeBool = true;
-        if(!testRangeBool){
-            bases[numBases] = Base(x,y);
-            bases[numBases].CountResources(worldmap,maxX,maxY);
-
-            gOil += bases[numBases].oil;
-            gSulphur += bases[numBases].sulphur;
-            gIron += bases[numBases].iron;
-            numBases++;
-        }
-    }
-Base::Base(){
-       InitBase();
-
-}
-void Base::InitBase(){
-    numBuildOrders = 0;
-        buildQueue = NULL;
-     oil = 0;
-     oilGraphics = 'O';
-     oilColour = BACKGROUND_INTENSITY;
-
-     sulphur = 0;
-     sulphurGraphics = 'S';
-     sulphurColour = FOREGROUND_RED  | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-
-     iron = 0;
-     ironGraphics = 'I';
-     ironColour = FOREGROUND_INTENSITY;
-
-     infantryOilCost = 0;
-     infantrySulphurCost = 0;
-     infantryIronCost = 0;
-     infantryUnitRepairGraphics = '+';
-     infantryUnitRepairColour = BACKGROUND_RED;
-     x = -1,y = -1;
-     resourceSearchSideLength = 10;
-     troopBuildingSideLength = 1;
-     colour = BACKGROUND_BLUE | BACKGROUND_GREEN ;
-     graphics = 'B';
-     amountUnits = 0;
-     maxBuildOrders = (troopBuildingSideLength+2)*(troopBuildingSideLength+2);
-    buildQueue = new BuildOrder[maxBuildOrders];
-    numForbiddens = 2;
-    forbiddens = new CHAR_INFO[numForbiddens];
-    forbiddens[0].Char.AsciiChar = seachar;
-    forbiddens[0].Attributes = seaattr;
-    forbiddens[1].Char.AsciiChar = Troop().graphics;
-    forbiddens[1].Attributes = Troop().color;
-     selected = false;
-
-}
-Base::Base(int fx,int fy,int fresourcesideLength,int funitSidelength){
-    InitBase();
-    if(buildQueue)delete[] buildQueue;
-
-    x = fx;
-    y = fy;
-
-    resourceSearchSideLength = fresourcesideLength;
-    troopBuildingSideLength = funitSidelength;
-
-     maxBuildOrders = (troopBuildingSideLength+2)*(troopBuildingSideLength+2);
-    buildQueue = new BuildOrder[maxBuildOrders];
-}
-Base::Base(int fx,int fy){
-    InitBase();
-    x = fx;
-    y = fy;
-}
-void Base::CountResources(CHAR_INFO* worldmap,int maxMapX,int maxMapY){
-
-    for(int i = -resourceSearchSideLength;i<=resourceSearchSideLength;i++){
-        for(int j = -resourceSearchSideLength;j<=resourceSearchSideLength;j++){
-            int index = x + i + (y + j)*maxMapX;
-            if(OutOfBounds(x+i,y+j,maxMapX,maxMapY))continue;
-
-            if(worldmap[index].Char.AsciiChar == oilGraphics && worldmap[index].Attributes == oilColour){
-                oil++;
-            }
-            if(worldmap[index].Char.AsciiChar == sulphurGraphics && worldmap[index].Attributes == sulphurColour){
-                sulphur++;
-            }
-            if(worldmap[index].Char.AsciiChar == ironGraphics && worldmap[index].Attributes == ironColour){
-                iron++;
-            }
-
-        }
-    }
-    oldiron = iron;
-    oldoil = oil;
-    oldsulphur = sulphur;
-
-}
-void Base::AddTroopToBuildQueue(int dx,int dy){
-    if(numBuildOrders >= maxBuildOrders)return;
-    for(int i = 0;i<numBuildOrders;i++)if(buildQueue[i].x == dx && buildQueue[i].y == dy) return;
-    buildQueue[numBuildOrders] = BuildOrder(dx,dy,TroopOrder);
-    numBuildOrders++;
-}
-void Base::ExecuteBuildQueue(Troop* troops,int& numTroops,int maxMapX,int maxMapY,char seaChar,WORD seaAttr,CHAR_INFO* worldmap){
-    for(int i = 0;i < numBuildOrders;i++){
-        switch(buildQueue[i].orderType){
-        case TroopOrder:
-            CreateInfantry(buildQueue[i].x,buildQueue[i].y,troops,numTroops,maxMapX,maxMapY,worldmap,seaChar,seaAttr);
-        break;
-        default:break;
-
-    }
-
-    }
-    numBuildOrders = 0;
-}
 inline bool compareCharWorldmap(CHAR_INFO* worldmap,int fx,int fy,int maxMapX,char compChar,WORD charAttr){
     return (worldmap[fx+fy*maxMapX].Char.AsciiChar == compChar && worldmap[fx+fy*maxMapX].Attributes == charAttr) ? 1 : 0;
 }
-void Base::CreateInfantry(int dx,int dy,Troop* troops,int& numTroops,int maxMapX,int maxMapY,CHAR_INFO* worldmap,char seaChar,WORD seaAttr){
-    if(abs(dx) > troopBuildingSideLength || abs(dy) > troopBuildingSideLength)return;
 
-    for(int i = 0;i<amountUnits;i++){
-        if(baseUnits[i]->bx == x+dx && baseUnits[i]->by == y+dy)return;
-    }
-    if(dx == 0 && dy == 0)return;
-    if(OutOfBounds(x+dx,y+dy,maxMapX,maxMapY))return;
-    for(int i = 0;i<numForbiddens;i++)if(compareCharWorldmap(worldmap,x+dx,x+dy,maxMapX,forbiddens[i].Char.AsciiChar,forbiddens[i].Attributes))return;
-    if(oil - infantryOilCost >= 0){
-        if(sulphur - infantrySulphurCost >= 0){
-            if(iron - infantryIronCost >= 0){
-                oil -= infantryOilCost;
-                sulphur -= infantrySulphurCost;
-                iron -= infantryIronCost;
-
-                troops[numTroops] = Troop(x+dx,y+dy);
-                troops[numTroops].bx = x+dx;
-                troops[numTroops].by = y+dy;
-                troops[numTroops].SpawnBase = this;
-                baseUnits[amountUnits++] = &troops[numTroops];
-                numTroops++;
-            }
-        }
-    }
-
-}
-void Base::Activate(){
-    colour |= BACKGROUND_INTENSITY;
-
-}
-void Base::Deactivate(){
-    colour &= ~BACKGROUND_INTENSITY;
-}
-void Base::Selected(CHAR_INFO* levelmap,int maxLX,int maxLY,int deltaX,int deltaY){
-    for(int i = -resourceSearchSideLength;i<=resourceSearchSideLength;i++){
-        for(int j = -resourceSearchSideLength;j<=resourceSearchSideLength;j++){
-            int index = x + i - deltaX + (y + j-deltaY)*maxLX;
-            if(!OutOfBounds(x+i-deltaX,y+j-deltaY,maxLX,maxLY))
-            levelmap[index].Attributes |= BACKGROUND_GREEN;
-        }
-    }
-    for(int i = -troopBuildingSideLength;i<=troopBuildingSideLength;i++){
-        for(int j = -troopBuildingSideLength;j<=troopBuildingSideLength;j++){
-            int index =  x + i - deltaX + (y + j-deltaY)*maxLX;
-            if(OutOfBounds(x+i-deltaX,y+j-deltaY,maxLX,maxLY))continue;
-            levelmap[index].Attributes &= ~BACKGROUND_GREEN;
-            levelmap[index].Attributes |= BACKGROUND_RED;
-
-        }
-    }
-     for(int i = 0;i<amountUnits;i++){
-            int index = baseUnits[i]->bx - deltaX +  (baseUnits[i]->by - deltaY)*maxLX;
-
-            levelmap[index].Attributes &= ~BACKGROUND_GREEN;
-            levelmap[index].Attributes &= ~BACKGROUND_RED;
-
-     }
-            WriteNumA(levelmap,oldiron,FOREGROUND_INTENSITY,0,7,maxLX);
-            WriteNumA(levelmap,oldoil,BACKGROUND_INTENSITY,0,8,maxLX);
-            WriteNumA(levelmap,oldsulphur,FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY,0,9,maxLX);
-}
-void Base::ShowBuildQueue(CHAR_INFO* levelmap,int maxLX,int maxLY,int fdeltaX,int fdeltaY){
-    for(int i = 0;i<numBuildOrders;i++){
-            switch(buildQueue[i].orderType){
-                case TroopOrder:
-   WriteNumA(levelmap,oldiron,FOREGROUND_INTENSITY,0,7,maxLX);
-            WriteNumA(levelmap,oldoil,BACKGROUND_INTENSITY,0,8,maxLX);
-            WriteNumA(levelmap,oldsulphur,FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY,0,9,maxLX);
-                    WriteCharA(levelmap,'Y',FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN
-                               ,min(x + buildQueue[i].x-fdeltaX,maxLX),
-                               min(y + buildQueue[i].y-fdeltaY,maxLY),maxLX);
-                break;
-
-            }
-        }
-}
-void Base::Unselected(CHAR_INFO* levelmap,int maxMapX,int maxMapY,int deltaX,int deltaY){
-    for(int i = -resourceSearchSideLength;i<=resourceSearchSideLength;i++){
-        for(int j = -resourceSearchSideLength;j<=resourceSearchSideLength;j++){
-            int index = x + i - deltaX + (y + j-deltaY)*maxMapX;
-            if(OutOfBounds(x+i-deltaX,y+j-deltaY,maxMapX,maxMapY))continue;
-            levelmap[index].Attributes &= ~BACKGROUND_GREEN;
-        }
-    }
-    for(int i = -resourceSearchSideLength;i<=resourceSearchSideLength;i++){
-        for(int j = -resourceSearchSideLength;j<=resourceSearchSideLength;j++){
-            int index = x + i + (y + j)*maxMapX;
-            if(OutOfBounds(x+i,y+j,maxMapX,maxMapY))continue;
-            levelmap[index].Attributes &= ~BACKGROUND_RED;
-
-        }
-    }
-
-}
 void WorldGen(CHAR_INFO* worldmap,int maxMapX,int maxMapY,char seaChar,WORD seaAttr,int amountResources,int resourceGroupSize){
     cout << "Loading Map..." << endl;
     HeightMap hm = SquareDiamondTerrainGeneration(10,100,40);
@@ -426,42 +124,45 @@ void SaveGame(int px,int py,CHAR_INFO* worldmap,int maxX,int maxY){
     fclose(f);
     numSaved++;
 }
-void TroopUpdate(Troop* troops,int numTroops,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Troop* selectedTroop){
+void InfantryUpdate(Infantry* infantries,int numInfantry,Tank* tanks,int numTanks,int deltaX,int deltaY,int maxLevelX,int maxLevelY,int maxMapX,int maxMapY,int movePoints,CHAR_INFO* levelmap,CHAR_INFO* worldmap,char seachar,Infantry* selectedInfantry,Tank* selectedTank){
     int index = 0;
-    int screenTroopX = 0;
-    int screenTroopY = 0;
-    for(int i = 0;i<numTroops;i++){
-        screenTroopX = troops[i].x-deltaX;
-        screenTroopY = troops[i].y-deltaY;
-        if(!OutOfBounds(screenTroopX,screenTroopY,maxLevelX,maxLevelY)){
-                WriteCharA(levelmap,troops[i].graphics,troops[i].color,screenTroopX,screenTroopY,maxLevelX);
-                troops[i].TravelDistanceX = min(movePoints,troops[i].cTravelDistanceX);
-                troops[i].TravelDistanceY = min(movePoints,troops[i].cTravelDistanceY);
+    int screenInfantryX = 0;
+    int screenInfantryY = 0;
+    for(int i = 0;i<numInfantry;i++){
+        screenInfantryX = infantries[i].x-deltaX;
+        screenInfantryY = infantries[i].y-deltaY;
+        if(!OutOfBounds(screenInfantryX,screenInfantryY,maxLevelX,maxLevelY)){
+                WriteCharA(levelmap,infantries[i].graphics,infantries[i].color,screenInfantryX,screenInfantryY,maxLevelX);
+                infantries[i].TravelDistanceX = min(movePoints,infantries[i].cTravelDistanceX);
+                infantries[i].TravelDistanceY = min(movePoints,infantries[i].cTravelDistanceY);
 
         }
-         if(!OutOfBounds(troops[i].ty-deltaY,troops[i].ty-deltaY,maxLevelX,maxLevelY))troops[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
+        infantries[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
     }
 
-    if(selectedTroop ){
-        g_bool = false;
-        for(int i = -selectedTroop->TravelDistanceX;i <= selectedTroop->TravelDistanceX;i++){
-                for(int j = -selectedTroop->TravelDistanceY; j <= selectedTroop->TravelDistanceY; j++){
+    if(selectedInfantry ){
+        selectedInfantry->Selected(levelmap,maxLevelX,maxLevelY,deltaX,deltaY,movePoints);
+        if(!OutOfBounds(selectedInfantry->x - deltaX,selectedInfantry->y - deltaY,maxLevelX,maxLevelY))
+            levelmap[selectedInfantry->x - deltaX+(selectedInfantry->y - deltaY)*maxLevelX].Attributes = selectedInfantry->color | BACKGROUND_RED;
 
-                    screenTroopX = selectedTroop->tx-deltaX + i;
-                    screenTroopY = selectedTroop->ty-deltaY + j;
+    }
+    for(int i = 0;i<numTanks;i++){
+        screenInfantryX = tanks[i].x-deltaX;
+        screenInfantryY = tanks[i].y-deltaY;
+        if(!OutOfBounds(screenInfantryX,screenInfantryY,maxLevelX,maxLevelY)){
+                WriteCharA(levelmap,tanks[i].graphics,tanks[i].color,screenInfantryX,screenInfantryY,maxLevelX);
+                tanks[i].TravelDistanceX = min(movePoints,tanks[i].cTravelDistanceX);
+                tanks[i].TravelDistanceY = min(movePoints,tanks[i].cTravelDistanceY);
 
-                    if(!OutOfBounds(screenTroopX,screenTroopY,maxLevelX,maxLevelY) && (abs(i)+abs(j)) <= movePoints){
-
-                       if(i != 0 || j != 0) for(int i = 0 ;i<selectedTroop->numForbidden;i++)if(compareCharWorldmap(levelmap,screenTroopX,screenTroopY,maxLevelX,selectedTroop->forbiddenChar[i],selectedTroop->forbiddenAttr[i]))g_bool = true;
-
-                           if(!g_bool) levelmap[screenTroopX  +  screenTroopY*maxLevelX].Attributes |= BACKGROUND_GREEN;
-                            g_bool = false;
-
-
-                    }
-            }
         }
-        if(!OutOfBounds(selectedTroop->x - deltaX,selectedTroop->y - deltaY,maxLevelX,maxLevelY))levelmap[selectedTroop->x - deltaX+(selectedTroop->y - deltaY)*maxLevelX].Attributes = selectedTroop->color | BACKGROUND_RED;
+        tanks[i].ShowMoveQueue(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
+    }
+
+    if(selectedTank){
+        selectedTank->Selected(levelmap,maxLevelX,maxLevelY,deltaX,deltaY,movePoints);
+        WriteStrNum(levelmap,"Percent of Move Points removed: ",100/selectedTank->movePointReducer,0,0,maxLevelX);
+        if(!OutOfBounds(selectedTank->x - deltaX,selectedTank->y - deltaY,maxLevelX,maxLevelY))
+            levelmap[selectedTank->x - deltaX+(selectedTank->y - deltaY)*maxLevelX].Attributes = selectedTank->color | BACKGROUND_RED;
 
     }
 }

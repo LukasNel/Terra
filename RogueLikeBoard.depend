@@ -1,9 +1,11 @@
 # depslib dependency file v1.0
-1458380844 source:c:\users\abrie\desktop\roguelikeboard\main.cpp
+1458403574 source:c:\users\abrie\desktop\roguelikeboard\main.cpp
 	<iostream>
 	"ConsoleFunctions.h"
 	"TerrainGeneration.h"
 	"WorldBasicFunctions.h"
+	"Infantry.h"
+	"Tanks.h"
 	<iostream>
 	<windows.h>
 	<windowsx.h>
@@ -27,14 +29,40 @@
 1449339795 c:\users\abrie\desktop\roguelikeboard\terraingeneration.cpp
 	"TerrainGeneration.h"
 
-1458381360 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.h
+1458401542 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.h
 	<windowsx.h>
 	<iostream>
 	<stdio.h>
 	<stdlib.h>
 	"ConsoleFunctions.h"
+	"Troops.h"
+	"Infantry.h"
+	"Tanks.h"
 	"WorldBasicFunctions.cpp"
+	"Bases.cpp"
+	"Troops.cpp"
 
-1458381420 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.cpp
+1458405097 c:\users\abrie\desktop\roguelikeboard\worldbasicfunctions.cpp
 	"WorldBasicFunctions.h"
+
+1458404784 c:\users\abrie\desktop\roguelikeboard\bases.cpp
+	"WorldBasicFunctions.h"
+
+1458404966 c:\users\abrie\desktop\roguelikeboard\troops.cpp
+	"WorldBasicFunctions.h"
+
+1458404566 c:\users\abrie\desktop\roguelikeboard\troops.h
+	"Bases.h"
+
+1458402807 c:\users\abrie\desktop\roguelikeboard\bases.h
+
+1458392114 c:\users\abrie\desktop\roguelikeboard\infantry.h
+	"Bases.h"
+	"Infantry.cpp"
+
+1458401863 c:\users\abrie\desktop\roguelikeboard\infantry.cpp
+	"Infantry.h"
+
+1458404298 c:\users\abrie\desktop\roguelikeboard\tanks.h
+	"Troops.h"
 

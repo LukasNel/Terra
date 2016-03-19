@@ -2,6 +2,10 @@
 #include "ConsoleFunctions.h"
 #include "TerrainGeneration.h"
 #include "WorldBasicFunctions.h"
+
+#include "Infantry.h"
+#include "Tanks.h"
+
 #include <iostream>
 #include <windows.h>
 #include <windowsx.h>
@@ -10,6 +14,9 @@
 #include <conio.h>
 #include <dos.h>
 #include <wincon.h>
+
+#define MAX_UNITS_PER_TYPE 256
+
 int maxMP = 100;
 using namespace std;
 
@@ -39,19 +46,32 @@ int GameEnd();
 int g_oil = 0;
 int g_sulphur = 0;
 int g_iron = 0;
-void SpawnTroops(int fnumTroops,CHAR_INFO* worldmap,int maxMapX,int maxMapY,int maxLX,int maxLY,char seaChar);
-int numTroops = 0;
-Troop troops[256];
-Troop* selectedTroop = NULL;
-Base bases[256];
+void SpawnInfantry(int fnumInfantry,CHAR_INFO* worldmap,int maxMapX,int maxMapY,int maxLX,int maxLY,char seaChar);
+
+int numInfantry = 0;
+Infantry infantries[MAX_UNITS_PER_TYPE];
+Infantry* selectedInfantry = NULL;
+
+int numTanks = 0;
+Tank tanks[MAX_UNITS_PER_TYPE];
+Tank* selectedTank = NULL;
+
+Base bases[MAX_UNITS_PER_TYPE];
 Base* selectedBase = NULL;
 int numBases = 0;
 bool GameRunning = true;
 
 int movePoints = 20;
 
+enum BuildState{
+    BuildingTanks,
+    BuildingInfantry
+
+};
+BuildState curBuildState = BuildingInfantry;
 int main()
 {
+
     unsigned int seed = GetTickCount();
     srand(seed);
     movePoints = maxMP;
@@ -67,32 +87,32 @@ int main()
     cout << "Hello world!" << endl;
     return 0;
 }
-void SpawnTroops(int fnumTroops,CHAR_INFO* worldmap,int maxMapX,int maxMapY,int maxLX,int maxLY,char seaChar){
-    int curTroopX = rand()%maxMapX;
-    int curTroopY = rand()%maxMapY;
-    while(worldmap[curTroopX+curTroopY*maxMapX].Char.AsciiChar == seaChar){
-        curTroopX = rand()%maxMapX;
-        curTroopY = rand()%maxMapY;
+void SpawnInfantry(int fnumInfantry,CHAR_INFO* worldmap,int maxMapX,int maxMapY,int maxLX,int maxLY,char seaChar){
+    int curInfantryX = rand()%maxMapX;
+    int curInfantryY = rand()%maxMapY;
+    while(worldmap[curInfantryX+curInfantryY*maxMapX].Char.AsciiChar == seaChar){
+        curInfantryX = rand()%maxMapX;
+        curInfantryY = rand()%maxMapY;
     }
 
-    for(int i = 0 ;i< fnumTroops;i++){
-        troops[numTroops++] = Troop(curTroopX,curTroopY);
-        curTroopX += ((rand()%3)-1);
-        curTroopY += ((rand()%3)-1);
-        curTroopX = max(0,curTroopX);
-        curTroopX = min(maxMapX,curTroopX);
-        curTroopY = max(0,curTroopY);
-        curTroopY = min(maxMapY,curTroopY);
-        while(worldmap[curTroopX+curTroopY*maxMapX].Char.AsciiChar == seaChar
-              && worldmap[curTroopX+curTroopY*maxMapX].Char.AsciiChar != troops[numTroops-1].graphics){
-            curTroopX += ((rand()%3)-1)%curTroopX;
-            curTroopY += ((rand()%3)-1)%curTroopY;
-            curTroopX = max(0,curTroopX);
-            curTroopY = max(0,curTroopY);
+    for(int i = 0 ;i< fnumInfantry;i++){
+        infantries[numInfantry++] = Infantry(curInfantryX,curInfantryY);
+        curInfantryX += ((rand()%3)-1);
+        curInfantryY += ((rand()%3)-1);
+        curInfantryX = max(0,curInfantryX);
+        curInfantryX = min(maxMapX,curInfantryX);
+        curInfantryY = max(0,curInfantryY);
+        curInfantryY = min(maxMapY,curInfantryY);
+        while(worldmap[curInfantryX+curInfantryY*maxMapX].Char.AsciiChar == seaChar
+              && worldmap[curInfantryX+curInfantryY*maxMapX].Char.AsciiChar != infantries[numInfantry-1].graphics){
+            curInfantryX += ((rand()%3)-1)%curInfantryX;
+            curInfantryY += ((rand()%3)-1)%curInfantryY;
+            curInfantryX = max(0,curInfantryX);
+            curInfantryY = max(0,curInfantryY);
         }
     }
-    deltaX = curTroopX - maxLX/2;
-    deltaY = curTroopY - maxLY/2;
+    deltaX = curInfantryX - maxLX/2;
+    deltaY = curInfantryY - maxLY/2;
 }
 int GameStart(){
     csbi = screenInfo();
@@ -119,10 +139,11 @@ int GameStart(){
     ClearBuffer(worldmap,maxX,maxY);
 
     WorldGen(worldmap,maxX,maxY,seachar,seaattr,256,100);
-   SpawnTroops(4,worldmap,maxX,maxY,maxLevelX,maxLevelY,seachar);
+   SpawnInfantry(4,worldmap,maxX,maxY,maxLevelX,maxLevelY,seachar);
     return 1;
 }
 COORD mousePos = {20,20};
+int alternating_variable = 0;
 int GameMain(){
         CheckForResize();
          if (! PeekConsoleInput(
@@ -164,56 +185,29 @@ int GameMain(){
         if(mousePos.X > maxLevelX-2)deltaX++;
         if(mousePos.Y > maxLevelY-2)deltaY++;
 
+        if(alternating_variable > 10){
+        BaseUpdate(bases,numBases,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,selectedBase);
+        InfantryUpdate(infantries,numInfantry,tanks,numTanks,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,seachar,selectedInfantry,selectedTank);
+        }else{
+        InfantryUpdate(infantries,numInfantry,tanks,numTanks,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,seachar,selectedInfantry,selectedTank);
+        BaseUpdate(bases,numBases,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,selectedBase);
+        }
+
         Render();
         FlushConsoleInputBuffer(hStdin);
+
+
+        alternating_variable++;
+        if(alternating_variable > 20) alternating_variable = 0;
         return 1;
 }
-int alternating_variable = 0;
+
 int Render(){
     if(deltaX > maxX - maxLevelX)deltaX = maxX- maxLevelX;
     if(deltaX < 0)deltaX = 0;
     if(deltaY < 0)deltaY = 0;
     if(deltaY > maxY - maxLevelY)deltaY = maxY-maxLevelY;
 
-    for(int i =0;i<maxLevelX;i++)
-        for(int j =0;j<maxLevelY;j++)levelmap[i+j*maxLevelX] = worldmap[i+deltaX+(j+deltaY)*maxX];
-/*
-    for(int i = 0;i<numTroops;i++)
-        if(troops[i].x-deltaX >= 0 && troops[i].y-deltaY >= 0 &&
-        troops[i].x-deltaX < maxLevelX && troops[i].y-deltaY < maxLevelY)
-                WriteCharA(levelmap,troops[i].graphics,troops[i].color,troops[i].x-deltaX,troops[i].y-deltaY,maxLevelX);
-
-     for(int i = 0;i<numTroops;i++)troops[i].TravelDistanceX = min(movePoints,troops[i].cTravelDistanceX),troops[i].TravelDistanceY = min(movePoints,troops[i].cTravelDistanceY);
-
-    if(selectedTroop && selectedTroop->tx-deltaX >= 0 && selectedTroop->ty-deltaY >= 0 &&
-        selectedTroop->tx-deltaX < maxLevelX && selectedTroop->ty-deltaY < maxLevelY){
-        for(int i = -selectedTroop->TravelDistanceX;i <= selectedTroop->TravelDistanceX;i++){
-                for(int j = -selectedTroop->TravelDistanceY;j <= selectedTroop->TravelDistanceY;j++){
-                    if(selectedTroop->tx-deltaX + i >= 0 && selectedTroop->ty-deltaY+j >= 0 &&
-                        selectedTroop->tx-deltaX + i < maxLevelX && selectedTroop->ty-deltaY + j < maxLevelY &&
-                         (abs(i)+abs(j)) <= movePoints){
-                            levelmap[selectedTroop->tx - deltaX + i  +
-                            ( selectedTroop->ty - deltaY + j)*maxLevelX].Attributes |= BACKGROUND_GREEN;
-                        }
-            }
-        }
-
-           //levelmap[selectedTroop->x - deltaX+(selectedTroop->y - deltaY)*maxLevelX].Attributes = selectedTroop->color | BACKGROUND_RED;
-        }
-        for(int i = 0;i<numTroops;i++)
-            if(troops[i].x-deltaX >= 0 && troops[i].y-deltaY >= 0 &&
-            troops[i].x-deltaX < maxLevelX && troops[i].y-deltaY < maxLevelY)
-                    troops[i].MoveQueueShow(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
-
-*/
-
-        if(alternating_variable > 10){
-        BaseUpdate(bases,numBases,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,selectedBase);
-        TroopUpdate(troops,numTroops,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,seachar,selectedTroop);
-        }else{
-        TroopUpdate(troops,numTroops,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,seachar,selectedTroop);
-        BaseUpdate(bases,numBases,deltaX,deltaY,maxLevelX,maxLevelY,maxX,maxY,movePoints,levelmap,worldmap,selectedBase);
-        }
         WriteStrNumA(levelmap,"Move Points: ",movePoints,FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,0,1,maxLevelX);
         WriteNumA(levelmap,deltaX,    FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,0,2,maxLevelX);
         WriteNumA(levelmap,deltaY,    FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,0,3,maxLevelX);
@@ -235,8 +229,9 @@ int Render(){
 
         SetConsoleBufferL((levelmap),maxLevelX,maxLevelY,deltaX,deltaY);
     ClearBuffer(levelmap,maxLevelX,maxLevelY);
-     alternating_variable++;
-    if(alternating_variable > 20) alternating_variable = 0;
+     for(int i =0;i<maxLevelX;i++)
+        for(int j =0;j<maxLevelY;j++)levelmap[i+j*maxLevelX] = worldmap[i+deltaX+(j+deltaY)*maxX];
+
 
 }
 int GameEnd(){
@@ -261,12 +256,15 @@ inline int CheckForResize(){
 bool testRange = false;
 void GameMainKeyBoard(KEY_EVENT_RECORD kEvent){
     if(kEvent.uChar.AsciiChar == 'g'){
-        deltaX = troops[rand()%numTroops].x-maxLevelX/2;
-        deltaY = troops[rand()%numTroops].y-maxLevelY/2;
+        deltaX = infantries[rand()%numInfantry].x-maxLevelX/2;
+        deltaY = infantries[rand()%numInfantry].y-maxLevelY/2;
     }
     if(kEvent.wVirtualKeyCode == VK_SPACE){
-        for(int i = 0;i<numTroops;i++){
-            troops[i].ExecuteMoveQueue();
+        for(int i = 0;i<numInfantry;i++){
+            infantries[i].ExecuteMoveQueue();
+        }
+        for(int i = 0;i<numTanks;i++){
+            tanks[i].ExecuteMoveQueue();
         }
          g_oil = 0;
          g_sulphur = 0;
@@ -282,7 +280,7 @@ void GameMainKeyBoard(KEY_EVENT_RECORD kEvent){
             bases[i].sulphur = g_sulphur;
             bases[i].iron = g_iron;
 
-            bases[i].ExecuteBuildQueue(troops,numTroops,maxX,maxY,seachar,seaattr,worldmap);
+            bases[i].ExecuteBuildQueue(infantries,numInfantry,tanks,numTanks,maxX,maxY,seachar,seaattr,worldmap);
 
             g_oil -= (g_oil - bases[i].oil);
             g_sulphur -=  (g_sulphur - bases[i].sulphur);
@@ -294,17 +292,23 @@ void GameMainKeyBoard(KEY_EVENT_RECORD kEvent){
         }
         movePoints = maxMP;
     }
-    if(kEvent.uChar.AsciiChar == 't' && selectedTroop){
-        selectedTroop->BuildBase(bases,numBases,g_oil,g_iron,g_sulphur,worldmap,maxX,maxY);
+    if(kEvent.uChar.AsciiChar == 'b' && selectedInfantry){
+        selectedInfantry->BuildBase(bases,numBases,g_oil,g_iron,g_sulphur,worldmap,maxX,maxY);
+    }
+    if(kEvent.uChar.AsciiChar == 't'){
+        curBuildState = BuildingTanks;
     }
 
+    if(kEvent.uChar.AsciiChar == 'i'){
+        curBuildState = BuildingInfantry;
+    }
 }
-int GMMScreenTroopX = 0;
-int GMMScreenTroopY = 0;
+int GMMScreenInfantryX = 0;
+int GMMScreenInfantryY = 0;
 bool GMMTraversable = true;
 void GameMainMouse(MOUSE_EVENT_RECORD mEvent){
-    GMMScreenTroopX = 0;
-    GMMScreenTroopY = 0;
+    GMMScreenInfantryX = 0;
+    GMMScreenInfantryY = 0;
     GMMTraversable = true;
     switch(mEvent.dwEventFlags){
         case MOUSE_MOVED:
@@ -314,19 +318,41 @@ void GameMainMouse(MOUSE_EVENT_RECORD mEvent){
         case 0:
             switch(mEvent.dwButtonState){
                 case FROM_LEFT_1ST_BUTTON_PRESSED:
-                    for(int i = 0;i < numTroops;i++){
-                        Troop& t_troop = troops[i];
-                        if(t_troop.x == mousePos.X+deltaX && t_troop.y == mousePos.Y+deltaY){
-                            if(!t_troop.activation){
-                                t_troop.Activate();
-                                if(selectedTroop)selectedTroop->Deactivate();
-                                selectedTroop = &t_troop;
+                    for(int i = 0;i < numInfantry;i++){
+                        Infantry& t_Infantry = infantries[i];
+                        if(t_Infantry.x == mousePos.X+deltaX && t_Infantry.y == mousePos.Y+deltaY){
+                            if(!t_Infantry.activation){
+                                t_Infantry.Activate();
+                                if(selectedInfantry)selectedInfantry->Deactivate();
+                                selectedInfantry = &t_Infantry;
                                 if(selectedBase)selectedBase->Deactivate();
                                 if(selectedBase )selectedBase = NULL;
+                                if(selectedTank)selectedTank->Deactivate();
+                                if(selectedTank)selectedTank = NULL;
 
                             }else{
-                                t_troop.Deactivate();
-                                if(selectedTroop && t_troop.x == selectedTroop->x && t_troop.y == selectedTroop->y)selectedTroop = NULL;
+                                t_Infantry.Deactivate();
+                                if(selectedInfantry && t_Infantry.x == selectedInfantry->x && t_Infantry.y == selectedInfantry->y)selectedInfantry = NULL;
+
+                            }
+                        }
+                    }
+                    for(int i = 0;i < numTanks;i++){
+                        Tank& t_tank = tanks[i];
+                        if(t_tank.x == mousePos.X+deltaX && t_tank.y == mousePos.Y+deltaY){
+                            if(!t_tank.activation){
+                                t_tank.Activate();
+                                if(selectedTank)selectedTank->Deactivate();
+                                selectedTank = &t_tank;
+                                if(selectedBase)selectedBase->Deactivate();
+                                if(selectedBase )selectedBase = NULL;
+                                if(selectedInfantry)selectedInfantry->Deactivate();
+                                if(selectedInfantry )selectedInfantry = NULL;
+
+                            }else{
+
+                                t_tank.Deactivate();
+                                if(selectedTank && t_tank.x == selectedTank->x && t_tank.y == selectedTank->y)selectedTank = NULL;
 
                             }
 
@@ -340,8 +366,8 @@ void GameMainMouse(MOUSE_EVENT_RECORD mEvent){
                                 if(selectedBase)selectedBase->Deactivate();
                                 bBase.Activate();
                                 selectedBase = &bBase;
-                                if(selectedTroop)selectedTroop->Deactivate();
-                                if(selectedTroop )selectedTroop = NULL;
+                                if(selectedInfantry)selectedInfantry->Deactivate();
+                                if(selectedInfantry )selectedInfantry = NULL;
 
                             }else{
                                 bBase.selected = false;
@@ -354,18 +380,21 @@ void GameMainMouse(MOUSE_EVENT_RECORD mEvent){
                     }
                 break;
                 case RIGHTMOST_BUTTON_PRESSED:
-                     if(selectedTroop && movePoints > 0){
-                        GMMScreenTroopX = selectedTroop->tx - deltaX;
-                        GMMScreenTroopY = selectedTroop->ty - deltaY;
-                        if(abs(GMMScreenTroopX - mousePos.X) <= selectedTroop->TravelDistanceX
-                        && abs(GMMScreenTroopY - mousePos.Y) <= selectedTroop->TravelDistanceY){
+                     if(selectedInfantry && movePoints > 0){
+
+                        GMMScreenInfantryX = selectedInfantry->tx - deltaX;
+                        GMMScreenInfantryY = selectedInfantry->ty - deltaY;
+
+                        if(abs(GMMScreenInfantryX - mousePos.X) <= selectedInfantry->TravelDistanceX
+                        && abs(GMMScreenInfantryY - mousePos.Y) <= selectedInfantry->TravelDistanceY){
+
                             if(worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX].Char.AsciiChar != seachar){
-                            for(int i = 0;i<numTroops;i++)if(troops[i].tx - deltaX == mousePos.X && troops[i].ty - deltaY == mousePos.Y)GMMTraversable = false;
-                            if(GMMTraversable && movePoints - (abs(GMMScreenTroopX - mousePos.X)+abs(GMMScreenTroopY - mousePos.Y)) >= 0){
-                                movePoints -= (abs(GMMScreenTroopX - mousePos.X)+abs(GMMScreenTroopY - mousePos.Y));
+                            for(int i = 0;i<numInfantry;i++)if(infantries[i].tx - deltaX == mousePos.X && infantries[i].ty - deltaY == mousePos.Y)GMMTraversable = false;
+                            if(GMMTraversable && movePoints - (abs(GMMScreenInfantryX - mousePos.X)+abs(GMMScreenInfantryY - mousePos.Y)) >= 0){
+                                movePoints -= (abs(GMMScreenInfantryX - mousePos.X)+abs(GMMScreenInfantryY - mousePos.Y));
 
 
-                                selectedTroop->Translate(mousePos.X - GMMScreenTroopX,mousePos.Y - GMMScreenTroopY,worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX]);
+                                selectedInfantry->Translate(mousePos.X - GMMScreenInfantryX,mousePos.Y - GMMScreenInfantryY,worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX]);
 
                             }
                             }
@@ -373,14 +402,46 @@ void GameMainMouse(MOUSE_EVENT_RECORD mEvent){
 
                         }
                       }
+                    if(selectedTank && movePoints > 0){
+
+                        GMMScreenInfantryX = selectedTank->tx - deltaX;
+                        GMMScreenInfantryY = selectedTank->ty - deltaY;
+
+                        if(abs(GMMScreenInfantryX - mousePos.X) <= selectedTank->TravelDistanceX
+                        && abs(GMMScreenInfantryY - mousePos.Y) <= selectedTank->TravelDistanceY){
+
+                            if(!selectedTank->checkIfForbidden(worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX].Char.AsciiChar,worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX].Attributes)){
+
+                            for(int i = 0;i<numTanks;i++)if(tanks[i].tx - deltaX == mousePos.X && tanks[i].ty - deltaY == mousePos.Y)GMMTraversable = false;
+
+                            if(GMMTraversable && movePoints - (((abs(GMMScreenInfantryX - mousePos.X)+abs(GMMScreenInfantryY - mousePos.Y)))/selectedTank->movePointReducer) >= 0){
+                                movePoints -= (((abs(GMMScreenInfantryX - mousePos.X)+abs(GMMScreenInfantryY - mousePos.Y)))/selectedTank->movePointReducer);
+
+
+                                selectedTank->Translate(mousePos.X - GMMScreenInfantryX,mousePos.Y - GMMScreenInfantryY,worldmap[mousePos.X + deltaX + (mousePos.Y+deltaY)*maxX]);
+
+                            }
+                            }
+
+
+                        }
+                    }
                     if(selectedBase){
                         if(selectedBase->troopBuildingSideLength >= abs(mousePos.X + deltaX - selectedBase->x) ){
                         if(selectedBase->troopBuildingSideLength >= abs(mousePos.Y + deltaY - selectedBase->y)){
-                       // if(abs(mousePos.X + deltaX - selectedBase->x) || abs(mousePos.Y + deltaY - selectedBase->y)>=1){
-                            selectedBase->AddTroopToBuildQueue(mousePos.X + deltaX - selectedBase->x,mousePos.Y + deltaY - selectedBase->y);
-                       // }
-                        }
-                        }
+                       if(abs(mousePos.X + deltaX) != selectedBase->x || abs(mousePos.Y + deltaY) != selectedBase->y){
+                            switch(curBuildState){
+                                case BuildingInfantry:
+                                selectedBase->AddTroopToBuildQueue(mousePos.X + deltaX - selectedBase->x,mousePos.Y + deltaY - selectedBase->y,InfantryOrder);
+                                break;
+                                case BuildingTanks:
+                                selectedBase->AddTroopToBuildQueue(mousePos.X + deltaX - selectedBase->x,mousePos.Y + deltaY - selectedBase->y,TankOrder);
+                                break;
+                                default:break;
+                            }
+                       }
+                       }
+                       }
 
                     }
 
@@ -402,3 +463,33 @@ void ErrorExit (LPSTR lpszMessage)
 
     ExitProcess(0);
 }
+/*
+    for(int i = 0;i<numInfantry;i++)
+        if(Infantry[i].x-deltaX >= 0 && Infantry[i].y-deltaY >= 0 &&
+        Infantry[i].x-deltaX < maxLevelX && Infantrys[i].y-deltaY < maxLevelY)
+                WriteCharA(levelmap,Infantrys[i].graphics,Infantrys[i].color,Infantrys[i].x-deltaX,Infantrys[i].y-deltaY,maxLevelX);
+
+     for(int i = 0;i<numInfantrys;i++)Infantrys[i].TravelDistanceX = min(movePoints,Infantrys[i].cTravelDistanceX),Infantrys[i].TravelDistanceY = min(movePoints,Infantrys[i].cTravelDistanceY);
+
+    if(selectedInfantry && selectedInfantry->tx-deltaX >= 0 && selectedInfantry->ty-deltaY >= 0 &&
+        selectedInfantry->tx-deltaX < maxLevelX && selectedInfantry->ty-deltaY < maxLevelY){
+        for(int i = -selectedInfantry->TravelDistanceX;i <= selectedInfantry->TravelDistanceX;i++){
+                for(int j = -selectedInfantry->TravelDistanceY;j <= selectedInfantry->TravelDistanceY;j++){
+                    if(selectedInfantry->tx-deltaX + i >= 0 && selectedInfantry->ty-deltaY+j >= 0 &&
+                        selectedInfantry->tx-deltaX + i < maxLevelX && selectedInfantry->ty-deltaY + j < maxLevelY &&
+                         (abs(i)+abs(j)) <= movePoints){
+                            levelmap[selectedInfantry->tx - deltaX + i  +
+                            ( selectedInfantry->ty - deltaY + j)*maxLevelX].Attributes |= BACKGROUND_GREEN;
+                        }
+            }
+        }
+
+           //levelmap[selectedInfantry->x - deltaX+(selectedInfantry->y - deltaY)*maxLevelX].Attributes = selectedInfantry->color | BACKGROUND_RED;
+        }
+        for(int i = 0;i<numInfantrys;i++)
+            if(Infantrys[i].x-deltaX >= 0 && Infantrys[i].y-deltaY >= 0 &&
+            Infantrys[i].x-deltaX < maxLevelX && Infantrys[i].y-deltaY < maxLevelY)
+                    Infantrys[i].MoveQueueShow(levelmap,maxLevelX,maxLevelY,deltaX,deltaY);
+
+*/
+
